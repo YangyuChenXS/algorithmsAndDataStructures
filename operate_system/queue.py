@@ -47,26 +47,30 @@ class ThreadSafeQueue(object):
             if block:
                 self.condition.acquire()
                 # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-                # 表示需要等待的时间，如果在这个等待时间的过程内，收到了通知，则不再继续等待
+                # 表示需要等待的时间，如果在这个等待时间的过程内，收到了通知condition.notify()，则不再继续等待
                 # 如果超过了等待时间，则也不等待
                 self.condition.wait(timeout=timeout)
                 # print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
                 self.condition.release()
             else:
                 return None
-        if self.size() == 0:  # 有可能等待结束后，size还是0，所以需要一个判断
-            return None
+
         self.lock.acquire()
-        item = self.queue.pop()
+        item = None
+        if self.size() > 0:  # 有可能等待结束后，size还是0，所以需要一个判断
+            item = self.queue.pop()
         self.lock.release()
         return item
 
     def get(self, index):
-        return self.queue[index]
+        self.lock.acquire()
+        item = self.queue[index]
+        self.lock.release()
+        return item
 
 
 if __name__ == '__main__':
-    queue =  ThreadSafeQueue(max_size=100)
+    queue = ThreadSafeQueue(max_size=100)
 
     def producer():
         while True:
